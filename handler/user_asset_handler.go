@@ -2,6 +2,7 @@ package handler
 
 import (
 	"chain-contract/middleware"
+	"chain-contract/util"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gin-gonic/gin"
 	"log"
@@ -21,15 +22,17 @@ func Process(c *gin.Context)  {
 	if err != nil{
 		log.Println(err)
 	}*/
-//	var i uint64 = 59
-	for i:=60 ;i<70;i++ {
+	var i int64 = 0
+	for  ;i<95;i++ {
 
-/*		userResp,err:=client.UserInfo(contractAddress,i,"0xABd99E7d0a07C577Fa397f505Cb4Bd44FAC2c747")
+		userResp,err:=client.UserInfo(contractAddress,i,"0xABd99E7d0a07C577Fa397f505Cb4Bd44FAC2c747")
 		if err != nil {
 			return
 		}
-		amount :=userResp[0].(*big.Int)
-		log.Println("amount :",amount)*/
+
+		amount:=util.ToDecimal(userResp[0],18)
+
+		log.Println("amount :",amount)
 
 		resp,err := client.PoolInfo(contractAddress,i)
 		if err != nil {
@@ -37,14 +40,13 @@ func Process(c *gin.Context)  {
 		}
 
 
-
-
-
-
-
 		lpAddr :=resp[0].(common.Address)
 
-		log.Println(lpAddr,i)
+
+		symbol,err:=client.Symbol(lpAddr.String())
+		decimal,err:=client.Decimal(lpAddr.String())
+
+		log.Println(lpAddr,i,symbol,decimal)
 	}
 
 	c.JSON(http.StatusOK, "success")

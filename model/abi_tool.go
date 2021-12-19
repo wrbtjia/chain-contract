@@ -2,6 +2,7 @@ package model
 
 import (
 	"bytes"
+	"chain-contract/middleware"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"io/ioutil"
@@ -10,8 +11,18 @@ import (
 
 var MasterChef string
 var Token string
+var LpToken string
 
 var MasterChefAbi abi.ABI
+var LpTokenAbi abi.ABI
+
+type AbiTool struct {
+	EthClients map[string]*middleware.EthClient
+
+}
+
+
+
 
 func init()  {
 	mcData,err:=ioutil.ReadFile("conf/master_chef.txt")
@@ -31,6 +42,22 @@ func init()  {
 		log.Fatal("ReadFile err : ",err)
 	}
 	Token =  string(tData)
+
+
+	lpData,err:=ioutil.ReadFile("conf/lp_token.txt")
+	if err != nil{
+		log.Fatal("ReadFile err : ",err)
+	}
+	LpToken =  string(lpData)
+
+	lpTokenAbi,err:=abi.JSON(bytes.NewBuffer(lpData))
+	if err != nil{
+		log.Fatal("JSON : ",err)
+	}
+	LpTokenAbi = lpTokenAbi
+
+
+
 }
 
 
@@ -48,3 +75,7 @@ func MakeMethoId(methodName string,abiStr string) (string,error) {
 	methodId := "0x"+common.Bytes2Hex(methodIdBytes)
 	return methodId,nil
 }
+
+
+
+

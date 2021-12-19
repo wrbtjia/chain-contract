@@ -8,7 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	"log"
 	"math/big"
-	"strconv"
 )
 
 type EthClient struct{
@@ -36,7 +35,7 @@ func (e *EthClient)Call(callArg interface{})  ([]byte,error) {
 }
 
 
-func (e *EthClient)PoolLength(contractAddress string)  (uint64,error) {
+func (e *EthClient)PoolLength(contractAddress string)  (int64,error) {
 
 	methodId,err := model.MakeMethoId("poolLength",string(model.MasterChef))
 	if err != nil{
@@ -58,25 +57,22 @@ func (e *EthClient)PoolLength(contractAddress string)  (uint64,error) {
 		log.Println("PoolLength Unpack  err : ",err)
 		return 0, err
 	}
-	return resp[0].(*big.Int).Uint64(),nil
+	return resp[0].(*big.Int).Int64(),nil
 }
 
-func (e *EthClient)PoolInfo(contractAddress string,i int)  ([]interface{},error) {
+func (e *EthClient)PoolInfo(contractAddress string,i int64)  ([]interface{},error) {
 
 	methodId,err := model.MakeMethoId("poolInfo",string(model.MasterChef))
 	if err != nil{
 		log.Println("MakeMethodId err : ",err)
 	}
-	int64Str := strconv.Itoa(i)
-	arg1:= common.HexToHash(int64Str).String()[2:]
+
+	arg1:=common.BigToHash(big.NewInt(i)).String()[2:]
 	callArg := map[string]interface{}{
-		"To": contractAddress,
-		"Gas": hexutil.EncodeUint64(300000),
+		"To": common.HexToAddress(contractAddress),
+//		"Gas": hexutil.EncodeUint64(300000),
 		"Data": methodId+arg1,
 	}
-
-	//0000000000000000000000000000000000000000000000000000000000000062
-	//0000000000000000000000000000000000000000000000000000000000000059
 	var result hexutil.Bytes
 	errs := e.RpcClient.Call(&result,"eth_call", callArg, "latest")
 	if errs !=nil {
@@ -91,14 +87,13 @@ func (e *EthClient)PoolInfo(contractAddress string,i int)  ([]interface{},error)
 }
 
 
-func (e *EthClient)UserInfo(contractAddress string,i uint64,addr string)  ([]interface{},error) {
+func (e *EthClient)UserInfo(contractAddress string,i int64,addr string)  ([]interface{},error) {
 
 	methodId,err := model.MakeMethoId("userInfo",string(model.MasterChef))
 	if err != nil{
 		log.Println("MakeMethodId err : ",err)
 	}
-	int64Str := strconv.FormatUint(i, 10)
-	arg1:= common.HexToHash(int64Str).String()[2:]
+	arg1:=common.BigToHash(big.NewInt(i)).String()[2:]
 	arg2:= common.HexToHash(addr).String()[2:]
 	callArg := map[string]interface{}{
 		"To": contractAddress,
@@ -116,6 +111,58 @@ func (e *EthClient)UserInfo(contractAddress string,i uint64,addr string)  ([]int
 	}
 	return resp,err
 }
+
+
+func (e *EthClient)Symbol(contractAddress string)  (string,error) {
+
+	methodId,err := model.MakeMethoId("symbol",string(model.LpToken))
+	if err != nil{
+		log.Println("MakeMethodId err : ",err)
+	}
+
+	callArg := map[string]interface{}{
+		"To": contractAddress,
+		"Data": methodId,
+	}
+	var result hexutil.Bytes
+	errs := e.RpcClient.Call(&result,"eth_call", callArg, "latest")
+	if errs !=nil {
+		log.Println("call  Symbol err : ",errs)
+		return "",errs
+	}
+	resp,err := model.LpTokenAbi.Unpack("symbol",result)
+	if err !=nil {
+		log.Println("Symbol Unpack  err : ",err)
+	}
+	return resp[0].(string),err
+}
+
+func (e *EthClient)Decimal(contractAddress string)  (uint8,error) {
+
+	methodId,err := model.MakeMethoId("decimals",string(model.LpToken))
+	if err != nil{
+		log.Println("MakeMethodId err : ",err)
+	}
+
+	callArg := map[string]interface{}{
+		"To": contractAddress,
+		"Data": methodId,
+	}
+	var result hexutil.Bytes
+	errs := e.RpcClient.Call(&result,"eth_call", callArg, "latest")
+	if errs !=nil {
+		log.Println("call  Decimal err : ",errs)
+		return 0,errs
+	}
+	resp,err := model.LpTokenAbi.Unpack("decimals",result)
+	if err !=nil {
+		log.Println("Symbol Decimal  err : ",err)
+	}
+	return resp[0].(uint8),err
+}
+
+
+
 
 type CallArg struct {
 	// common.Address 是以太坊依赖包的地址类型，其原型是 [20]byte 数组
